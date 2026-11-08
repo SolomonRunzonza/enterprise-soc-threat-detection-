@@ -1,0 +1,40 @@
+
+<group name="local,syslog,sshd,">
+
+  <!--
+    Detection ID: SOC-DET-001
+    Detection Name: Repeated SSH Authentication Failures
+    Incident Reference: INC-002
+
+    Purpose:
+      Detect repeated SSH authentication failures
+      originating from the same source IP address.
+
+    Correlation:
+      Base Rule: 5760
+      Frequency: 5
+      Timeframe: 120 seconds
+      Same Source IP: Required
+
+    Severity: 8
+    MITRE ATT&CK: T1110 - Brute Force
+
+    Validation:
+      Wazuh Logtest: Passed
+      Live Detection: Passed
+  -->
+
+  <rule id="100100" level="8" frequency="5" timeframe="120">
+    <if_matched_sid>5760</if_matched_sid>
+    <same_source_ip />
+
+    <description>SOC-DET-001: Repeated SSH authentication failures from the same source IP</description>
+
+    <group>authentication_failures,ssh_password_guessing,</group>
+
+    <mitre>
+      <id>T1110</id>
+    </mitre>
+  </rule>
+
+</group>
