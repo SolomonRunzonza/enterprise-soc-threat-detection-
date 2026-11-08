@@ -266,25 +266,26 @@ The following evidence supports the detection and investigation.
 
 ### Evidence 1 — Linux SSH Authentication Logs
 
-![Live SSH Authentication Failures](../evidence/INC-002/01-live-ssh-failures.png)
+![Live SSH Authentication Failures](../evidence/INC-002/live-log-capture.png)
+![Live SSH Authentication Failures](../evidence/INC-002/correlation-failed-password.png)
 
 Shows failed SSH password attempts recorded by the Linux endpoint.
 
 ### Evidence 2 — Custom Wazuh Detection
 
-![Custom Wazuh Rule 100100 Alert](../evidence/INC-002/02-custom-rule-alert.png)
+![Custom Wazuh Rule 100100 Alert](../evidence/INC-002/rule-100100-correlation.png)
 
 Shows the live custom detection alert in Wazuh Threat Hunting.
 
 ### Evidence 3 — Alert Document Details
 
-![Wazuh Alert Details](../evidence/INC-002/03-alert-details.png)
+![Wazuh Alert Details](../evidence/INC-002/detailed-rule-100100.png)
 
 Shows the source IP, target account, affected endpoint, and original authentication event.
 
 ### Evidence 4 — MITRE ATT&CK Mapping
 
-![MITRE ATT&CK Mapping](../evidence/INC-002/04-mitre-attack-mapping.png)
+![MITRE ATT&CK Mapping](../evidence/INC-002/detailed-rule-100100-1.png)
 
 Shows the custom rule severity, correlation frequency, and MITRE ATT&CK classification.
 
