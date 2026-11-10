@@ -1,0 +1,255 @@
+# Detection Engineering — Custom Wazuh Rules
+
+## Overview
+
+This directory contains custom Wazuh detection rules developed and validated in the **Enterprise SOC Threat Detection and Incident Response Lab**.
+
+The objective is to demonstrate practical detection engineering skills, including:
+
+- Security log analysis and event decoding
+- Custom SIEM rule development
+- Event correlation and threshold-based detection
+- Linux authentication monitoring
+- MITRE ATT&CK mapping
+- Detection testing and validation
+- SOC alert triage and incident documentation
+
+The rules were tested using Wazuh Logtest and validated against live authentication activity generated in an authorized VirtualBox lab.
+
+## 1. Detection Catalog
+
+| Detection ID | Rule ID | Detection | Severity | MITRE ATT&CK |
+|---|---|---|---|---|
+| SOC-DET-001 | 100100 | Repeated SSH authentication failures | Level 8 | T1110 |
+| SOC-DET-002 | 100102 | Individual failed sudo authentication | Level 5 | T1548.003 |
+| SOC-DET-002 | 100101 | Repeated failed sudo authentication | Level 8 | T1548.003 |
+
+## 2. Detection Files
+
+### SOC-DET-001 — Repeated SSH Authentication Failures
+
+**File:** `ssh-repeated-authentication.xml`
+
+This detection identifies repeated failed SSH authentication attempts originating from the same source IP address.
+
+**Detection logic:**
+
+- Monitors SSH authentication failures matched by Wazuh Rule `5760`.
+- Correlates events originating from the same source IP.
+- Uses a threshold of five matching failures within 120 seconds.
+- Generates a Level 8 alert when the correlation condition is satisfied.
+
+**MITRE ATT&CK:** T1110 — Brute Force
+
+**Validation:** Successfully triggered during controlled SSH authentication testing.
+
+**Related investigation:** [INC-002 — SSH Brute Force](../investigations/INC-002-ssh-brute-force.md)
+
+### SOC-DET-002 — Failed Sudo Authentication
+
+**File:** `sudo-repeated-authentication.xml`
+
+This detection monitors failed sudo authentication attempts and correlates repeated failures associated with the same user.
+
+Two custom rules implement the detection.
+
+**Rule 100102 — Individual authentication failure**
+
+- Matches built-in PAM authentication failure Rule `5503`.
+- Restricts matching to the `sudo` program.
+- Generates a Level 5 alert.
+
+**Rule 100101 — Repeated authentication failure**
+
+- Correlates events matched by Rule `100102`.
+- Uses the `same_srcuser` correlation condition.
+- Detects three matching failures within 120 seconds.
+- Generates a Level 8 alert.
+
+**MITRE ATT&CK:** T1548.003 — Sudo and Sudo Caching
+
+**Validation:** Successfully triggered during controlled sudo authentication testing on `LINUX-SVR-01`.
+
+**Related investigation:** [INC-003 — Sudo Authentication Investigation](../investigations/INC-003-sudo-privilege-escalation.md)
+
+## 3. Lab Architecture
+
+| Component | Role | IP Address |
+|---|---|---|
+| SOC-SIEM-01 | Wazuh Manager and SIEM | 192.168.56.10 |
+| LINUX-SVR-01 | Monitored Linux endpoint | 192.168.56.20 |
+| Windows Host | Administrative workstation | 192.168.56.1 (host-only network) |
+
+**Security monitoring workflow:**
+
+```text
+Linux Authentication Activity
+           |
+           v
+     systemd-journald
+           |
+           v
+       Wazuh Agent
+           |
+           v
+       Wazuh Manager
+           |
+           v
+    Custom Detection Rules
+           |
+           v
+      Wazuh Alerts
+           |
+           v
+     SOC Investigation
+```
+
+## 4. Deployment Instructions
+
+The detection files in this directory are reference configurations for the lab.
+
+On a Wazuh manager, custom rules can be installed by merging their rule definitions into:
+
+```bash
+/var/ossec/etc/rules/local_rules.xml
+```
+
+Alternatively, use separate custom rule files in the Wazuh custom rules directory, ensuring that rule IDs remain unique and that rule groups are correctly defined.
+
+Do not replace an existing `local_rules.xml` without preserving its current contents.
+
+### Validate XML syntax
+
+```bash
+sudo xmllint --noout /var/ossec/etc/rules/local_rules.xml
+```
+
+### Validate Wazuh rule configuration
+
+```bash
+sudo /var/ossec/bin/wazuh-analysisd -t
+```
+
+### Restart the Wazuh manager
+
+Only after successful validation:
+
+```bash
+sudo systemctl restart wazuh-manager
+```
+
+### Verify service status
+
+```bash
+sudo systemctl is-active wazuh-manager
+```
+
+### Verify connected agents
+
+```bash
+sudo /var/ossec/bin/agent_control -l
+```
+
+## 5. Detection Testing
+
+### Wazuh Logtest
+
+Use the following command to test custom detection rules:
+
+```bash
+sudo /var/ossec/bin/wazuh-logtest
+```
+
+Submit representative log events and inspect:
+
+1. Phase 1 — Pre-decoding
+2. Phase 2 — Decoding
+3. Phase 3 — Rule matching and correlation
+
+For frequency-based detections, submit multiple qualifying events in the same Logtest session.
+
+### Live Testing
+
+Controlled authentication failures were generated against the monitored Linux endpoint.
+
+Alerts were reviewed in:
+
+**Wazuh Dashboard → Threat Hunting → Events**
+
+Relevant rule IDs:
+
+```text
+100100
+100101
+100102
+```
+
+Live testing confirmed that Wazuh could ingest, decode, correlate, and alert on the simulated authentication activity.
+
+## 6. Validation Results
+
+| Detection | Logtest | Live Endpoint |
+|---|---|---|
+| SOC-DET-001 — SSH failures | Passed | Passed |
+| SOC-DET-002 — Individual sudo failure | Passed | Passed |
+| SOC-DET-002 — Repeated sudo failures | Passed | Passed |
+
+For SOC-DET-002, three failed sudo authentication events from the same account were correlated over approximately 44 seconds, producing a Level 8 alert.
+
+## 7. Detection Limitations
+
+These detections demonstrate functional event correlation in a controlled lab, but additional tuning would be required for production deployment.
+
+**SSH detection limitations:**
+
+- Threshold-based detection may miss low-and-slow authentication attacks.
+- Shared source IP addresses can affect attribution.
+- Authorized administrative activity can generate authentication failures.
+
+**Sudo detection limitations:**
+
+- Repeated legitimate password mistakes may generate alerts.
+- The correlation rule does not independently establish successful privilege escalation.
+- The detection depends on the availability and correct parsing of PAM authentication logs.
+
+**General considerations:**
+
+- Correlate authentication failures with successful logins and privileged commands.
+- Establish appropriate thresholds for each environment.
+- Monitor agent health and log collection gaps.
+- Validate detections after Wazuh upgrades.
+- Review false positives and false negatives during ongoing tuning.
+
+## 8. Related Investigations
+
+| Incident | Investigation |
+|---|---|
+| INC-001 | [SSH Authentication Investigation](../investigations/INC-001-ssh-authentication.md) |
+| INC-002 | [SSH Brute Force Investigation](../investigations/INC-002-ssh-brute-force.md) |
+| INC-003 | [Sudo Authentication Investigation](../investigations/INC-003-sudo-privilege-escalation.md) |
+
+Supporting screenshots and investigation evidence are available in the repository's `evidence/` directory.
+
+## 9. Future Detection Engineering Improvements
+
+Planned improvements include:
+
+- SSH authentication failure followed by successful login correlation
+- Sudo authentication failures followed by successful privileged command execution
+- Suspicious user and group modifications
+- Linux persistence mechanism monitoring
+- Unauthorized changes to sensitive system files
+- Alert enrichment and investigation automation
+- Detection tuning and regression testing
+
+## 10. Disclaimer
+
+All authentication simulations and detection validation activities were performed in an authorized, isolated lab environment.
+
+The rules are provided for educational, defensive security research, and detection engineering purposes.
+
+---
+
+**Project:** Enterprise SOC Threat Detection and Incident Response Lab  
+**Technology:** Wazuh SIEM, Linux, systemd-journald, Oracle VirtualBox  
+**Focus:** Detection Engineering, SOC Operations, Incident Investigation
