@@ -1,0 +1,37 @@
+<!--
+  Detection ID: SOC-DET-002
+  Title: Repeated Failed Sudo Authentication
+  Platform: Linux / Wazuh
+  Source: PAM authentication events collected via journald
+  Tested with: Wazuh 4.14.10
+
+  Rule 100102: Identify an individual sudo authentication failure.
+  Rule 100101: Correlate three matching failures from the same source user
+               within 120 seconds.
+
+  Deployment: Merge the rules inside the existing <group> element of
+  /var/ossec/etc/rules/local_rules.xml. Do not replace other local rules.
+-->
+<group name="local,syslog,sshd,">
+  <!-- SOC-DET-002: Individual failed sudo authentication -->
+  <rule id="100102" level="5">
+    <if_sid>5503</if_sid>
+    <program_name type="pcre2">^sudo$</program_name>
+    <description>SOC-DET-002: Failed sudo authentication</description>
+    <group>sudo_authentication_failure,</group>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+  </rule>
+
+  <!-- SOC-DET-002: Repeated failed sudo authentication -->
+  <rule id="100101" level="8" frequency="3" timeframe="120">
+    <if_matched_sid>100102</if_matched_sid>
+    <same_srcuser />
+    <description>SOC-DET-002: Repeated failed sudo authentication attempts by the same user</description>
+    <group>sudo_authentication_failure,privilege_escalation,</group>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+  </rule>
+</group>
