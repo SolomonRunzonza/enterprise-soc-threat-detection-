@@ -309,19 +309,19 @@ The following screenshots were collected during detection validation and inciden
 
 ### Evidence 1 — Sudo Authentication Failure
 
-![Sudo authentication failure](../evidence/INC-003/sudo-authentication failure.png)
+![Sudo authentication failure](../evidence/INC-003/sudo-authentication&failure.png)
 
 ### Evidence 2 — Additional Authentication Evidence
 
-![Additional sudo authentication evidence](../evidence/INC-003/sudo-authentication failure1.png)
+![Additional sudo authentication evidence](../evidence/INC-003/sudo-authentication&failure1.png)
 
 ### Evidence 3 — Wazuh Alert Details
 
-![Wazuh alert details](../evidence/INC-003/sudo alert details.png)
+![Wazuh alert details](../evidence/INC-003/sudo&alert&details.png)
 
 ### Evidence 4 — Detection Metadata and MITRE ATT&CK
 
-![Rule metadata and MITRE ATT&CK mapping](../evidence/INC-003/sudo alert details1.png)
+![Rule metadata and MITRE ATT&CK mapping](../evidence/INC-003/sudo&alert&details1.png)
 
 **Evidence directory:** [INC-003](../evidence/INC-003/)
 
